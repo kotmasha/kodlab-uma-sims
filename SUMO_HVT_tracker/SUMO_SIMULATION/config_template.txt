@@ -1,0 +1,10 @@
+<configuration>
+    <input>
+        <net-file value=/>
+        <route-files value=/>
+    </input>
+    <time>
+        <begin value=/>
+        <end value=/>
+    </time>
+</configuration>

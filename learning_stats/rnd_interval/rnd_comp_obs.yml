@@ -1,0 +1,22 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: rnd_comp_obs
+func: start_experiment
+Nruns: 1
+
+params:
+  mode: lazy
+  env_length: 20
+  total_cycles: 500
+  ex_dataQ: True
+  agent_dataQ: True
+  name: comp_obs
+  mids_to_record:
+    - counter
+    - pos
+    - dist
+    - targ_Q
+    - targ_Eu
+    - targ_Ev
+    - targ_Du
+    - targ_Dv

@@ -1,0 +1,32 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: mouse_single
+func: start_experiment
+Nruns: 1
+
+params:
+  name: mouse_QAT
+  ex_dataQ: False
+  agent_dataQ: False
+  total_cycles: 5000
+  burn_in_cycles: 1000
+  SnapType: default
+  discount: 0.75
+  threshold: 0.05
+  AutoTarg: True
+  xbounds: "(0,40)"
+  ybounds: "(0,40)"
+  out_of_bounds: "lambda x: False"
+  training_cheesesPerView: 1.5
+  training_nibbles: 1000
+  training_nibbleDist: 3
+  cheesesPerView: 1.5
+  nibbles: 50
+  nibbleDist: 2
+  viewportSize: 5
+  step_prob: 5
+  mids_to_record:
+    - counter
+    - pos_out
+    - dir_out
+    - che_out

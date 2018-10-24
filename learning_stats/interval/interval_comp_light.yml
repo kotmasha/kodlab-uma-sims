@@ -1,0 +1,38 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: interval_comp_light
+func: start_experiment
+Nruns: 5
+
+params:
+  mode: teleport
+  discount: .75
+  env_length: 20
+  total_cycles: 500
+  ex_dataQ: False
+  agent_dataQ: False
+  name: comp_light
+  mids_to_record:
+    - counter
+    - pos
+    - dist
+    - targ_Q
+    - targ_Eu
+    - targ_Ev
+    - targ_Du
+    - targ_Dv
+    - wdiff_Q
+    - wdiff_Eu
+    - wdiff_Ev
+    - wdiff_Du
+    - wdiff_Dv
+    - rdiff_Q
+    - rdiff_Eu
+    - rdiff_Ev
+    - rdiff_Du
+    - rdiff_Dv
+    - fdiff_Q
+    - fdiff_Eu
+    - fdiff_Ev
+    - fdiff_Du
+    - fdiff_Dv

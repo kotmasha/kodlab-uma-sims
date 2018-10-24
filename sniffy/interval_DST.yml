@@ -1,0 +1,20 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: sniffy_linear
+func: start_experiment
+Nruns: 20
+
+params:
+  SnapType: default
+  discount: 0.875
+  AutoTarg: False
+  env_length: 20
+  total_cycles: 1000
+  burn_in_cycles: 800
+  ex_dataQ: False
+  agent_dataQ: False
+  name: interval_DST
+  mids_to_record:
+    - counter
+    - dist
+    - sig
