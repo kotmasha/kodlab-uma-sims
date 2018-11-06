@@ -168,7 +168,7 @@ def start_experiment(run_params):
         'type': SnapType,
         'AutoTarg': True,
         'threshold': Threshold,
-        'discount': Discount,
+        'q': Discount,
     }
 
     # initialize a new experiment

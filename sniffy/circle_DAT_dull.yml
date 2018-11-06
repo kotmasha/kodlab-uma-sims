@@ -7,8 +7,9 @@ func: start_experiment
 Nruns: 100
 
 params:
-  SnapType: qualitative
-  PeakType: sharp
+  SnapType: discounted
+  discount: 0.875
+  PeakType: dull
   env_type: circle
   env_sens: 20
   beacon_width: 4
@@ -16,7 +17,7 @@ params:
   burn_in_cycles: 900
   ex_dataQ: False
   agent_dataQ: False
-  name: circle_QAT_sharp
+  name: circle_DAT_dull
   mids_to_record:
     - pos
     - tpos

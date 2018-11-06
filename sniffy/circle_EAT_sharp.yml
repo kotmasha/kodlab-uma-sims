@@ -7,7 +7,7 @@ func: start_experiment
 Nruns: 100
 
 params:
-  SnapType: qualitative
+  SnapType: empirical
   PeakType: sharp
   env_type: circle
   env_sens: 20
@@ -16,7 +16,7 @@ params:
   burn_in_cycles: 900
   ex_dataQ: False
   agent_dataQ: False
-  name: circle_QAT_sharp
+  name: circle_EAT_sharp
   mids_to_record:
     - pos
     - tpos

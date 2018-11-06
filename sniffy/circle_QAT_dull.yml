@@ -4,7 +4,7 @@
 
 script: sniffy_AT
 func: start_experiment
-Nruns: 1
+Nruns: 100
 
 params:
   SnapType: qualitative
