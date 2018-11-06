@@ -1,0 +1,20 @@
+100 runs
+circle, circumference=20
+beacon width=4
+
+qualitative auto-targeting agents
+signal:  0-1 signal (0 if at target, otherwise 1)
+sensors: beacon sensors + delays
+
+Each run begins with a training period consisting of a random walk (1600 steps),
+after which agents are given control authority.
+
+This plot presents separate statistics (mean distance to target over time 
+plus-minus std dev) for walks ending at distance<=5 to the target, and for
+walks ending at distance>5 from the target.
+
+The plot shows no clear separation of the results, though:
+1) the first class of runs does clearly converge to the target;
+2) the second class presents constant behavior (the agents choose not to 
+   move).
+

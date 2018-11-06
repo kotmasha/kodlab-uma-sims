@@ -143,19 +143,14 @@ supp_file.close()
 #
 
 AGENT_TYPES={
-    '_Q':['qualitative','xkcd:red'],
-    '_Eu':['empirical uniform','xkcd:sky blue'],
-    '_Ev':['empirical value-based','xkcd:blue'],
-    '_Du':['discounted uniform','xkcd:forest green'],
-    '_Dv':['discounted value-based','xkcd:green'],
+    '_Q1':['qualitative, dull peak','xkcd:red'],
+    '_Q2':['qualitative, sharp peak','xkcd:red'],
+    '_Ev1':['empirical, dull peak','xkcd:blue'],
+    '_Ev2':['empirical, sharp peak','xkcd:blue'],
+    '_Dv1':['discounted, dull peak','xkcd:green'],
+    '_Dv2':['discounted, sharp peak','xkcd:green'],
     }
-#ORDERED_TYPES=['_Q','_Eu','_Ev','_Du','_Dv']
-#ORDERED_TYPES=['_Eu','_Du']
-<<<<<<< HEAD
-ORDERED_TYPES=['_Q','_Ev','_Dv']
-=======
-ORDERED_TYPES=['_Q','_Eu']
->>>>>>> 25850924b7ce01f3c9bfb0969867a997c104c27d
+ORDERED_TYPES=['_Q1','_Q2','_Ev1','_Ev2','_Dv1','_Dv2']
 NTYPES=len(ORDERED_TYPES)
 
 # length of the environment (due to differences between circle and interval):
@@ -182,7 +177,7 @@ POS=np.array(DATA['pos'])
 
 #- initialize figure
 fig,axes=plt.subplots(nrows=NTYPES,ncols=1,sharex=True,sharey=False)
-fig.suptitle('# of incorrect implications over time',fontsize=10)
+fig.suptitle('Target state evolution over time (run '+str(NUM)+' of '+str(preamble['Nruns'])+')',fontsize=10)
 plt.subplots_adjust(left=0.05,right=0.95,bottom=0.05,top=0.95)
 plt.xlabel('time elapsed (cycles)',fontsize=10)
 
@@ -196,10 +191,13 @@ AX={}
 #for typ,ax in zip(ORDERED_TYPES,axes[1:]):
 for typ,ax in zip(ORDERED_TYPES,axes):
     AX[typ]=ax
-    AX[typ].set_title('Target state representation over time, '+AGENT_TYPES[typ][0],fontsize=10)
+    AX[typ].set_title(AGENT_TYPES[typ][0],fontsize=10)
     AX[typ].set_ylabel('position in env',fontsize=10)
     AX[typ].yaxis.set_ticks(-0.5+np.arange(ENV_LENGTH))
-    AX[typ].tick_params(labelbottom=True,labelleft=False)
+    if typ=='_Dv2':
+        AX[typ].tick_params(labelbottom=True,labelleft=False)
+    else:
+        AX[typ].tick_params(labelbottom=False,labelleft=False)
 
 #- form the implications plot
 t=np.array(DATA['counter'])
@@ -214,10 +212,14 @@ t=np.array(DATA['counter'])
 #- form the trajectories plots
 for typ in ORDERED_TYPES:
     EXTENT=(1,DURATION+1,0,ENV_LENGTH-1)
-    AX[typ].imshow(TARGET_TRAJECTORY[typ], cmap = plt.cm.Blues, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
-    AX[typ].imshow(TARGET_GROUND[typ], cmap = plt.cm.Reds, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
-    AX[typ].plot(t,np.array(POS),'.r',alpha=1,label='Observer\'s position')
-    AX[typ].legend()
+    AX[typ].imshow(TARGET_TRAJECTORY[typ], origin='lower', cmap = plt.cm.Blues, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
+    AX[typ].imshow(TARGET_GROUND[typ], origin='lower', cmap = plt.cm.Reds, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
+    AX[typ].plot(t,np.array(POS),'.r',alpha=.5,label='Observer\'s position')
+    if typ=='_Q1':
+        AX[typ].legend(loc='upper right')
+    
+
+
 
 #Show the plots
 plt.show()

@@ -1,0 +1,34 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: sniffy_circle_AT
+func: start_experiment
+Nruns: 100
+
+params:
+  SnapType: qualitative
+  circumference: 20
+  beacon_width: 4
+  total_cycles: 2000
+  burn_in_cycles: 1600
+  ex_dataQ: False
+  agent_dataQ: False
+  name: circle_QAT
+  mids_to_record:
+    - pos
+    - counter
+    - dist
+    - sig
+    - targ_rt+
+    - targ_rt-
+    - targ_lt+
+    - targ_lt-
+    - pred_rt+
+    - pred_rt-
+    - pred_lt+
+    - pred_lt-
+    - div_rt+
+    - div_rt-
+    - div_lt+
+    - div_lt-
+    
+

@@ -91,6 +91,16 @@ def ldiff(x,y): # pointwise difference between lists
 def flatten(ls): # concatenation of elements in a list of lists
     return reduce(concat, ls)
 
+def normalize_weights(matr):
+    L=len(matr)
+    lu=lambda x,y: matr[x][y] if y<len(matr[x]) else matr[y][x]
+    newmatr=[[] for ind in xrange(L)]
+    for i in xrange(L):
+        for j in xrange(len(matr[i])):
+            tot=lu(i,j)+lu(i,compi(j))+lu(compi(i),compi(j))+lu(compi(i),j)
+            newmatr[i].append(matr[i][j]/tot)
+    return newmatr
+    
 ###################################
 
 
@@ -120,6 +130,7 @@ def start_experiment(run_params):
     MODE=run_params['mode'] #mode by which Sniffy moves around: 'teleport'/'walk'/'lazy'
     X_BOUND = run_params['env_length']  # no. of edges in discrete interval = no. of GPS sensors
     ENV_LENGTH=X_BOUND+1
+    DIAM=X_BOUND
     NSENSORS=X_BOUND
 
     try:
@@ -129,7 +140,7 @@ def start_experiment(run_params):
     try:
         Threshold=float(run_params['threshold']) #implication threshold, defaulting to the square of the probability of a single position.
     except KeyError:
-        Threshold=1./pow(ENV_LENGTH,4)
+        Threshold=1./(2.*pow(ENV_LENGTH,1))
 
     # Environment description
     def in_bounds(pos):
@@ -158,22 +169,22 @@ def start_experiment(run_params):
         'threshold': 0,
     }
 
+    ORDERED_TYPES=['_Q1','_Q2','_Eu','_Ev1','_Ev2','_Du','_Dv1','_Dv2']
+    QUALITATIVE={'_Q1','_Q2'}
+    EMPIRICAL={'_Eu','_Ev1','_Ev2'}
+    DISCOUNTED={'_Du','_Dv1','_Dv2'}
+
     AGENT_PARAMS={
-        '_Q':qualitative_observer,
+        '_Q1':qualitative_observer,
+	'_Q2':qualitative_observer,
         '_Eu':empirical_observer,
-        '_Ev':empirical_observer,
+        '_Ev1':empirical_observer,
+	'_Ev2':empirical_observer,
         '_Du':discounted_observer,
-        '_Dv':discounted_observer,
+        '_Dv1':discounted_observer,
+	'_Dv2':discounted_observer,
         }
-<<<<<<< HEAD
-    #ORDERED_TYPES=['_Q','_Eu','_Ev','_Du','_Dv']
-    #ORDERED_TYPES=['_Q','_Ev','_Dv']
-    ORDERED_TYPES=['_Q','_Eu']
- 
-=======
-    ORDERED_TYPES=['_Q','_Eu','_Ev','_Du','_Dv']
-    
->>>>>>> 25850924b7ce01f3c9bfb0969867a997c104c27d
+
     #Register "observer" agents:
     #  These agents remain inactive throghout the experiment, in order to record 
     #  all the UNCONDITIONAL implications among the initial sensors (in their 'minus'
@@ -198,11 +209,14 @@ def start_experiment(run_params):
 
     # ...which function? THIS function:
     RESCALING={
-        '_Q':  lambda r: r,
+	'_Q1': lambda r: 0 if r==0 else 1,
+        '_Q2': lambda r: r,
         '_Eu': lambda r: 1,
-        '_Ev': lambda r: X_BOUND-r,
+        '_Ev1': lambda r: pow(1+DIAM-r,1),
+	'_Ev2': lambda r: pow(1+DIAM-r,2), #pow(1.-Discount,r-ENV_LENGTH),
         '_Du': lambda r: 1,
-        '_Dv': lambda r: pow(1.-Discount,r-X_BOUND),
+	'_Dv1': lambda r: pow(1+DIAM-r,1),
+        '_Dv2': lambda r: pow(1+DIAM-r,2), #pow(1.-Discount,r-ENV_LENGTH),
         }
 
 
@@ -220,8 +234,9 @@ def start_experiment(run_params):
 
     ## introduce agent's position
 
-    # select starting position
+    # select starting and target positions
     START = rnd(ENV_LENGTH)
+    TARGET = rnd(ENV_LENGTH)
 
     # effect of motion on position
     id_pos = EX.register('pos')
@@ -263,14 +278,10 @@ def start_experiment(run_params):
     motions={'simple':back_and_forth,'walk':random_walk,'lazy':lazy_random_walk,'teleport':teleport}
     EX.construct_measurable(id_pos,motions[MODE],[START,START])
 
-    # generate target position
-    TARGET=START
-    while dist(TARGET, START)==0:
-        TARGET = rnd(ENV_LENGTH)
-
     # set up position sensors
-    def xsensor(m):  # along x-axis
-        return lambda state: state[id_pos][0] < m + 1
+    def xsensor(state,m):  # along x-axis
+        return state[id_pos][0] < m + 1
+
     #Construct initial sensors and record their semantics
     FOOTPRINTS=[]
     all_comp=lambda x: [1-t for t in x]
@@ -278,7 +289,7 @@ def start_experiment(run_params):
         tmp_name = 'x' + str(ind)
         tmp_footprint=[(1 if pos<ind+1 else 0) for pos in xrange(ENV_LENGTH)]
         id_tmp, id_tmpc = EX.register_sensor(tmp_name)  # registers the sensor pairs
-        EX.construct_sensor(id_tmp, xsensor(ind))  # constructs the measurables associated with the sensor
+        EX.construct_sensor(id_tmp, partial(xsensor,m=ind))  # constructs the measurables associated with the sensor
         for typ in ORDERED_TYPES:
             OBSERVERS[typ].add_sensor(id_tmp)
         FOOTPRINTS.append(tmp_footprint)
@@ -330,12 +341,12 @@ def start_experiment(run_params):
     #
     ### AUXILIARY COMPUTATIONS
     #
-    
+
     # value of each position in the environment, needed as np.array, for each run and type
     VALUES={typ:[RESCALING[typ](dist(pos,TARGET)) for pos in xrange(ENV_LENGTH)] for typ in ORDERED_TYPES}
     vm=lambda typ: np.array(VALUES[typ])
     # extreme (=target) value of signal for each run and type
-    v_extreme=lambda typ: vm(typ).min() if typ=='_Q' else vm(typ).max()
+    v_extreme=lambda typ: vm(typ).min() if typ in QUALITATIVE else vm(typ).max()
     #Construct value-based ground truth target footprint
     GROUND_TARG={}
     for typ in ORDERED_TYPES:
@@ -352,31 +363,35 @@ def start_experiment(run_params):
         FPx=fp(x)
         FPy=fp(y)
         #compute the expected ground weights
-        if typ=='_Q':
+        if typ in QUALITATIVE:
+	    #minimum over joint footprint
             return -1 if not sum(FPx*FPy) else np.extract(FPx*FPy,vm(typ)).min()
         else:
-            #return (sum(FPx*FPy*vm(typ))+0.)/ENV_LENGTH
-            return (sum(FPx*FPy*vm(typ))+0.)/sum(vm(typ)+0.)
+            #expected value over joint footprint
+            #return sum(FPx*FPy*vm(typ))/(0.+ENV_LENGTH)
+            #normalized expected value over joint footprint
+            return sum(FPx*FPy*vm(typ))/(sum(vm(typ))+0.)
+        
 
     #- check for [ground truth] implications (index based)
     def imp_check(x,y,typ):
+	#trivial cases:
+	if y==x:
+	    return 1
+	if y==compi(x):
+	    return 0
+
+	#form the weights
         XY=lookup_val(x,y,typ)
         X_Y=lookup_val(compi(x),y,typ)
         X_Y_=lookup_val(compi(x),compi(y),typ)
         XY_=lookup_val(x,compi(y),typ)
-        if typ=='_Q': #qualitative implication (zero threshold)
+
+	#compute the PCR values:
+        if typ in QUALITATIVE: #qualitative implication (zero threshold)
             return int(qless(qmax(XY,X_Y_),XY_))
         else: #real-valued (statistical) implication
-            if y==x:
-                #same sensor yields a True entry
-                return 1
-            elif y==compi(x):
-                #complementary sensors yield a False entry
-                return 0
-            else:
-                #otherwise, compare weights:
-                #return int(XY_<min(Threshold*sum(vm(typ)),XY,X_Y_,X_Y) or (XY_==0. and X_Y==0.))
-                return int(XY_<min(Threshold,XY,X_Y_,X_Y) or (XY_==0. and X_Y==0.))
+            return int(XY_<min(Threshold,XY,X_Y_,X_Y) or (XY_==0. and X_Y==0.))
 
     #- construct the ground truth matrices (flattened) for each run and type
     GROUND_WEIGHTS={typ:[] for typ in ORDERED_TYPES}
@@ -403,39 +418,25 @@ def start_experiment(run_params):
     #- import weight matrices from core
     id_weights={typ:EX.register('wgt'+typ) for typ in ORDERED_TYPES}
     def weights(state,typ):
-<<<<<<< HEAD
-        print typ+' weights:'
-        print convert_weights(state[id_internal[typ]][0]['weights'])
-        print '\n'
-=======
-        #print typ+' weights:'
-        #print convert_weights(state[id_internal[typ]][0]['weights'])
-        #print '\n'
->>>>>>> 25850924b7ce01f3c9bfb0969867a997c104c27d
-        return flatten(state[id_internal[typ]][0]['weights'])
-
-    for typ in ORDERED_TYPES:    
-        INIT = (-np.ones(NSENSORS*(2*NSENSORS+1)) if typ=='_Q' else np.zeros(NSENSORS*(2*NSENSORS+1))).tolist()
+        if typ in QUALITATIVE:
+            weights_tmp=state[id_internal[typ]][0]['weights']
+        else:
+            weights_tmp=normalize_weights(state[id_internal[typ]][0]['weights'])
+        return flatten(weights_tmp)
+    
+    for typ in ORDERED_TYPES:
+        INIT = (-np.ones(NSENSORS*(2*NSENSORS+1)) if typ in QUALITATIVE else np.zeros(NSENSORS*(2*NSENSORS+1))).tolist()
         EX.construct_measurable(id_weights[typ],partial(weights,typ=typ),[INIT],depth=0)
 
     #- import raw implications from core
     id_raw_imps={typ:EX.register('raw'+typ) for typ in ORDERED_TYPES}
     def raw_imps(state,typ):
-<<<<<<< HEAD
-        print typ+' implications:'
-        print convert_raw_implications(state[id_internal[typ]][0]['dirs'])
-        print '\n'
-=======
-        #print typ+' implications:'
-        #print convert_raw_implications(state[id_internal[typ]][0]['dirs'])
-        #print '\n'
->>>>>>> 25850924b7ce01f3c9bfb0969867a997c104c27d
         return flatten(state[id_internal[typ]][0]['dirs'])
 
     INIT=[(1 if x==y else 0) for y in xrange(2*NSENSORS) for x in xrange(y+1)] #initialize to (lower triangle of) identity matrix
     for typ in ORDERED_TYPES:
         EX.construct_measurable(id_raw_imps[typ],partial(raw_imps,typ=typ),[INIT],depth=0)
-     
+
     #- import full implications from core
     id_full_imps={typ:EX.register('full'+typ) for typ in ORDERED_TYPES}
     def full_imps(state,typ):
@@ -449,29 +450,17 @@ def start_experiment(run_params):
     #- ell_infinity distance of current weights to ground truth
     id_wdiffs={typ:EX.register('wdiff'+typ) for typ in ORDERED_TYPES}
     def wdiffs(state,typ):
-        #print state[id_weights[typ]][0]
         return max(ldiff(state[id_weights[typ]][0],GROUND_WEIGHTS[typ]))
 
     for typ in ORDERED_TYPES:
-        #print '\n\n'
-        #print EX.this_state(id_weights[typ])
-        #print len(EX.this_state(id_weights[typ]))
-        #print '\n\n'
-        #print GROUND_WEIGHTS[typ]
-        #print len(GROUND_WEIGHTS[typ])
-        #print '\n\n'
         INIT=max(ldiff(EX.this_state(id_weights[typ]),GROUND_WEIGHTS[typ]))
         EX.construct_measurable(id_wdiffs[typ],partial(wdiffs,typ=typ),[INIT],depth=0)
- 
+
     #- ell_one distance of learned PCR to expected ground truth PCR
     id_rawdiffs={typ:EX.register('rdiff'+typ) for typ in ORDERED_TYPES}
     def rawdiffs(state,typ):
         return sum(ldiff(state[id_raw_imps[typ]][0],GROUND_RAW_IMPS[typ]))
     for typ in ORDERED_TYPES:
-        #print '\n\n'
-        #print EX.this_state(id_raw_imps[typ])
-        #print GROUND_RAW_IMPS[typ]
-        #print '\n\n'
         INIT=sum(ldiff(EX.this_state(id_raw_imps[typ]),GROUND_RAW_IMPS[typ]))
         EX.construct_measurable(id_rawdiffs[typ],partial(rawdiffs,typ=typ),[INIT],depth=0)
 
@@ -487,24 +476,11 @@ def start_experiment(run_params):
     for agent_name in EX._AGENTS:
         EX._AGENTS[agent_name].init()
 
-    QUERY_IDS={agent_id:{} for agent_id in EX._AGENTS}
-    for agent_id in EX._AGENTS:
-        for token in ['plus', 'minus']:
-
-            # INTRODUCE DELAYED GPS SENSORS:
-            #delay_sigs = [EX._AGENTS[agent_id].generate_signal(['x' + str(ind)], token) for ind in xrange(NSENSORS)]
-            #EX._AGENTS[agent_id].delay(delay_sigs, token)
-
-            # MAKE A LIST OF ALL SENSOR LABELS FOR EACH AGENT
-            QUERY_IDS[agent_id][token]=EX._AGENTS[agent_id].make_sensor_labels(token)
-
-
     # START RECORDING
     default_instruction=[cid_obs[typ] for typ in ORDERED_TYPES]
     EX.update_state(default_instruction)
     recorder=experiment_output(EX,run_params)
     recorder.addendum('rnd_seed',SEED)
-    recorder.addendum('query_ids',QUERY_IDS)
     recorder.addendum('threshold',Threshold)
     recorder.addendum('Nsensors',NSENSORS)
     recorder.addendum('env_length',ENV_LENGTH)
@@ -525,6 +501,3 @@ def start_experiment(run_params):
     # Wrap up and collect garbage
     recorder.close()
     EX.remove_experiment()
-
-
-

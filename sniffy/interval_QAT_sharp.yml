@@ -1,0 +1,38 @@
+# Sniffy .yml file
+#
+# The "name", "script" and "func" fields are mandatory.
+
+script: sniffy_AT
+func: start_experiment
+Nruns: 1
+
+params:
+  SnapType: qualitative
+  PeakType: sharp
+  env_type: interval
+  env_sens: 10
+  beacon_width: 4
+  total_cycles: 200
+  burn_in_cycles: 180
+  ex_dataQ: False
+  agent_dataQ: False
+  name: interval_QAT_sharp
+  mids_to_record:
+    - pos
+    - tpos
+    - counter
+    - dist
+    - sig
+    - targ_rt+
+    - targ_rt-
+    - targ_lt+
+    - targ_lt-
+    - pred_rt+
+    - pred_rt-
+    - pred_lt+
+    - pred_lt-
+    - div_rt+
+    - div_rt-
+    - div_lt+
+    - div_lt-
+
