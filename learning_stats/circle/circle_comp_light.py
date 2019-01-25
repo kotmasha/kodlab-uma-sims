@@ -136,7 +136,7 @@ def start_experiment(run_params):
     try:
         Discount=float(run_params['discount']) #discount coefficient, if any
     except KeyError:
-        Discount=0.75
+        Discount=1.-1./(ENV_LENGTH+1.)
     try:
         Threshold=float(run_params['threshold']) #implication threshold, defaulting to the square of the probability of a single position.
     except KeyError:
@@ -213,10 +213,10 @@ def start_experiment(run_params):
         '_Q2': lambda r: r,
         '_Eu': lambda r: 1,
         '_Ev1': lambda r: pow(1+DIAM-r,1),
-        '_Ev2': lambda r: pow(1+DIAM-r,2), #pow(1.-Discount,r-ENV_LENGTH),
+        '_Ev2': lambda r: pow(1+DIAM-r,4), #pow(1.-Discount,r-ENV_LENGTH),
         '_Du': lambda r: 1,
         '_Dv1': lambda r: pow(1+DIAM-r,1),
-        '_Dv2': lambda r: pow(1+DIAM-r,2), #pow(1.-Discount,r-ENV_LENGTH),
+        '_Dv2': lambda r: pow(1+DIAM-r,4), #pow(1.-Discount,r-ENV_LENGTH),
         }
 
     # OBSERVER agents simply collect implications among the assigned sensors, always inactive

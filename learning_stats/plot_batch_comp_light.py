@@ -131,7 +131,7 @@ def get_data(path,name,data,supp):
 # Paramaters
 ENVS=['interval','circle','rnd_interval']
 MODE=sys.argv[1] # 'teleport','lazy','walk','simple',...
-VARIATIONS=['1','2']
+VARIATIONS=['dull','sharp']
 AGENT_TYPES={
     '_Q':['qualitative','xkcd:red'],
     '_Ev':['empirical value-based','xkcd:blue'],
@@ -164,19 +164,21 @@ DURATION=lambda env: len(DATA[env]['counter'][0])
 #- initialize figure
 fig,axes=plt.subplots(nrows=len(VARIATIONS),ncols=len(ENVS),sharex=True,sharey=True)
 #fig.suptitle('Error rates in learned PCRs over time',fontsize=10)
-plt.subplots_adjust(left=0.05,right=0.95,bottom=0.05,top=0.95)
+plt.subplots_adjust(left=0.08,right=0.99,bottom=0.09,top=0.92)
 
 #- form the implications plots
-for ind,ax_row in zip(VARIATIONS,axes):
+for varn,ax_row in zip(VARIATIONS,axes):
     for env,ax in zip (ENVS,ax_row):
         # prepare axis parameters
-        #ax.set_ylabel('error rate',fontsize=10)
-        ax.set_xlabel('time elapsed (cycles)',fontsize=10)
-        ax.set_yscale('log')
+	ax.set_title(env+', '+varn,fontsize=18)
+        ax.set_xlabel('time elapsed (cycles)',fontsize=18)
+	ax.set_ylabel('error rate',fontsize=18)
+	ax.tick_params(labelsize=18)
+        #ax.set_yscale('log')
         t=xrange(DURATION(env))
         # iterate over types
         for styp in AGENT_TYPES:
-            typ=styp+ind #form specific recorded type
+            typ=styp+('1' if varn=='dull' else '2') #form specific recorded type
 
             #weight_diffs=np.array(DATA[env]['wdiff'+typ])
             raw_diffs=np.array(DATA[env]['rdiff'+typ])/NIMPS(env)
@@ -196,7 +198,7 @@ for ind,ax_row in zip(VARIATIONS,axes):
             diff_full_sdv=np.std(full_diffs,axis=0)
         
             ALPH=0.7 #foreground transparency coefficients
-            BETA=0.2 #background transparency coefficients
+            BETA=0.1 #background transparency coefficients
         
             #ax.fill_between(t,diff_weight_mean-diff_weight_sdv,diff_weight_mean+diff_weight_sdv,alpha=BETA,color=AGENT_TYPES[styp][1])
             ax.fill_between(t,diff_raw_mean-diff_raw_sdv,diff_raw_mean+diff_raw_sdv,alpha=BETA,color=AGENT_TYPES[styp][1])

@@ -1,0 +1,50 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: interval_comp_light
+func: start_experiment
+Nruns: 10
+
+params:
+  mode: lazy
+  env_length: 10
+  discount: 0.99
+  total_cycles: 500
+  ex_dataQ: False
+  agent_dataQ: False
+  name: small_lazy
+  mids_to_record:
+    - counter
+    - pos
+    - dist
+    - targ_Q1
+    - targ_Q2
+    - targ_Eu
+    - targ_Ev1
+    - targ_Ev2
+    - targ_Du
+    - targ_Dv1
+    - targ_Dv2
+    - wdiff_Q1
+    - wdiff_Q2
+    - wdiff_Eu
+    - wdiff_Ev1
+    - wdiff_Ev2
+    - wdiff_Du
+    - wdiff_Dv1
+    - wdiff_Dv2
+    - rdiff_Q1
+    - rdiff_Q2
+    - rdiff_Eu
+    - rdiff_Ev1
+    - rdiff_Ev2
+    - rdiff_Du
+    - rdiff_Dv1
+    - rdiff_Dv2
+    - fdiff_Q1
+    - fdiff_Q2
+    - fdiff_Eu
+    - fdiff_Ev1
+    - fdiff_Ev2
+    - fdiff_Du
+    - fdiff_Dv1
+    - fdiff_Dv2

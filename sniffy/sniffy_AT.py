@@ -142,13 +142,22 @@ def start_experiment(run_params):
     
     # Parameters
     SnapType=run_params['SnapType']
-
     PeakType=run_params['PeakType'] # 'sharp'/'dull'
+    
+    RESCALING={
+        ('qualitative','dull'): lambda r: 0 if r==0 else 1,
+        ('qualitative','sharp'): lambda r: r,
+        ('empirical','dull'): lambda r: 1+diam-r,
+        ('empirical','sharp'): lambda r: pow(1+diam-r,4),
+        ('discounted','dull'): lambda r: 1+diam-r,
+        ('discounted','sharp'): lambda r: pow(1+diam-r,4),
+        }
+    rescaling=RESCALING[(SnapType,PeakType)]
     
     try:
         Discount=float(run_params['discount'])
     except KeyError:
-        Discount=1.-1./(2.*env_length)
+        Discount=1.-1./(env_length+1.)
 
     try:
         Threshold=float(run_params['threshold'])
@@ -411,16 +420,6 @@ def start_experiment(run_params):
     ### signal scales with distance to target
     #
 
-    RESCALING={
-        ('qualitative','dull'): lambda r: 0 if r==0 else 1,
-        ('qualitative','sharp'): lambda r: r,
-        ('empirical','dull'): lambda r: 1+diam-r,
-        ('empirical','sharp'): lambda r: pow(1+diam-r,2),
-        ('discounted','dull'): lambda r: 1+diam-r,
-        ('discounted','sharp'): lambda r: pow(1+diam-r,2),
-        }
-    rescaling=RESCALING[(SnapType,PeakType)]
-    
     def sig(state):
         return rescaling(state[id_dist][0])
     SIG_RANGE=diam

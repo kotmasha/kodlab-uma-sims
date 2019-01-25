@@ -8,7 +8,6 @@ Nruns: 100
 
 params:
   SnapType: discounted
-  discount: 0.875
   PeakType: sharp
   env_type: circle
   env_sens: 20

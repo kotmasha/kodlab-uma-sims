@@ -1,0 +1,29 @@
+# The yml file for sniffy, name, script and fun are must have
+
+script: mouse_mult_small
+func: start_experiment
+Nruns: 100
+
+params:
+  name: mouse_QAT_mult
+  ex_dataQ: False
+  agent_dataQ: False
+  training_cycles: 1000
+  trial_cycles: 500
+  trial_periods: 20
+  SnapType: qualitative
+  AutoTarg: True
+  xbounds: "(0,11)"
+  ybounds: "(0,11)"
+  out_of_bounds: "lambda x: False"
+  viewportSize: 5
+  number_of_cheeses: 1
+  step_prob: 5
+  mids_to_record:
+    - counter
+    - pos_out
+    - dir_out
+    - che_out
+    - sig_step
+    - sig_turn
+    - mdist

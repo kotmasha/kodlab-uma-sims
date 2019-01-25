@@ -176,10 +176,10 @@ TARGET_GROUND={typ:np.array([SUPP['ground_targ'][typ] for t in xrange(DURATION)]
 POS=np.array(DATA['pos'])
 
 #- initialize figure
-fig,axes=plt.subplots(nrows=NTYPES,ncols=1,sharex=True,sharey=False)
-fig.suptitle('Target state evolution over time (run '+str(NUM)+' of '+str(preamble['Nruns'])+')',fontsize=10)
-plt.subplots_adjust(left=0.05,right=0.95,bottom=0.05,top=0.95)
-plt.xlabel('time elapsed (cycles)',fontsize=10)
+fig,axes=plt.subplots(nrows=NTYPES,ncols=1,sharex=True,sharey=True)
+#fig.suptitle('Target state evolution over time (run '+str(NUM)+' of '+str(preamble['Nruns'])+')',fontsize=10)
+plt.subplots_adjust(left=0.03,right=0.99,bottom=0.07,top=0.97)
+plt.xlabel('time elapsed (cycles)',fontsize=14)
 
 #- initialize implications plot
 #ax_imps=axes[0]
@@ -191,13 +191,13 @@ AX={}
 #for typ,ax in zip(ORDERED_TYPES,axes[1:]):
 for typ,ax in zip(ORDERED_TYPES,axes):
     AX[typ]=ax
-    AX[typ].set_title(AGENT_TYPES[typ][0],fontsize=10)
-    AX[typ].set_ylabel('position in env',fontsize=10)
+    AX[typ].set_title(AGENT_TYPES[typ][0],fontsize=14)
+    AX[typ].set_ylabel('position',fontsize=12)
     AX[typ].yaxis.set_ticks(-0.5+np.arange(ENV_LENGTH))
     if typ=='_Dv2':
-        AX[typ].tick_params(labelbottom=True,labelleft=False)
+        AX[typ].tick_params(labelbottom=True,labelleft=False,labelsize=14)
     else:
-        AX[typ].tick_params(labelbottom=False,labelleft=False)
+        AX[typ].tick_params(labelbottom=False,labelleft=False,labelsize=14)
 
 #- form the implications plot
 t=np.array(DATA['counter'])
@@ -211,7 +211,7 @@ t=np.array(DATA['counter'])
 
 #- form the trajectories plots
 for typ in ORDERED_TYPES:
-    EXTENT=(1,DURATION+1,0,ENV_LENGTH-1)
+    EXTENT=(1,DURATION+1,-0.5,ENV_LENGTH-0.5)
     AX[typ].imshow(TARGET_TRAJECTORY[typ], origin='lower', cmap = plt.cm.Blues, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
     AX[typ].imshow(TARGET_GROUND[typ], origin='lower', cmap = plt.cm.Reds, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.5,extent=EXTENT)
     AX[typ].plot(t,np.array(POS),'.r',alpha=.5,label='Observer\'s position')

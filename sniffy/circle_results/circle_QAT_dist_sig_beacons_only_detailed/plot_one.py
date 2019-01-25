@@ -207,7 +207,7 @@ for key,ax in zip(ACCESS_KEYS,axes[1:]):
     else:
 	ax.tick_params(labelbottom=False,labelleft=False)
     #main plot
-    EXTENT=(1,DURATION+1,0,ENV_LENGTH-1)
+    EXTENT=(1,DURATION+1,-0.5,ENV_LENGTH-0.5)
     ax.imshow(TARGET_GROUND, origin='lower', cmap = plt.cm.Reds, vmin = 0, vmax = 2, aspect='auto',interpolation='none',alpha=0.7,extent=EXTENT,label='true target')
     ax.imshow(PREDICTION_TRAJECTORY[key], origin='lower', cmap = plt.cm.Greens, vmin = 0, vmax = 1, aspect='auto',interpolation='none',alpha=0.7,extent=EXTENT,label='predicted position')
     ax.imshow(TARGET_TRAJECTORY[key], origin='lower', cmap = plt.cm.Blues, vmin = 0, vmax = 2, aspect='auto',interpolation='none',alpha=0.7,extent=EXTENT,label='computed target')

@@ -6,8 +6,8 @@ Nruns: 100
 
 params:
   mode: lazy
-  discount: 0.999
   env_length: 20
+  discount: 0.999
   beacon_width: 4
   total_cycles: 2000
   ex_dataQ: False

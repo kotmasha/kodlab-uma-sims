@@ -2,7 +2,7 @@
 
 script: mouse_single_small
 func: start_experiment
-Nruns: 10
+Nruns: 100
 
 params:
   name: mouse_QAT_small

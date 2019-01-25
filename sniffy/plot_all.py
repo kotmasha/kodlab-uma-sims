@@ -1,4 +1,3 @@
-from __future__ import division
 import sys
 import json
 import numpy as np
@@ -122,7 +121,7 @@ def get_data(path,name,data,supp):
     for ind in xrange(nruns):
         input_file[ind].close()
         supp_file[ind].close()
-
+    return preamble
 
 #
 # Load the data
@@ -134,10 +133,11 @@ def get_data(path,name,data,supp):
 # - rows:
 ENVS=['interval','circle']
 # - columns:
+ORDERED_TYPES=['empirical','discounted','qualitative']
 TYPES={
-    'qualitative':'QAT',
     'empirical':'EAT',
     'discounted':'DAT',
+    'qualitative':'QAT',
     }
 # each axis has two plots:
 VARIATIONS={
@@ -145,60 +145,74 @@ VARIATIONS={
     'sharp':'xkcd:red',
     }
 # generate a set of keys to access data
-KEYS=[(env,typ,varn) for env in ENVS for typ in TYPES.keys() for varn in VARIATIONS.keys()]
+KEYS=[(env,typ,varn) for env in ENVS for typ in ORDERED_TYPES for varn in VARIATIONS.keys()]
 
 # Read the data and supplementary data from ./[env]/comp_[MODE]/
 DATA={key:{} for key in KEYS}
 SUPP={key:{} for key in KEYS}
+BURN={}
 for key in KEYS:
     env,typ,varn=key
     tmp_path=os.getcwd()
     tmp_name=env+'_'+TYPES[typ]+'_'+varn
-    get_data(tmp_path,tmp_name,DATA[key],SUPP[key])
+    preamble=get_data(tmp_path,tmp_name,DATA[key],SUPP[key])
+    BURN[key]=preamble['burn_in_cycles']
 
 # length of the environment (due to differences between circle and interval):
 ENV_LENGTH=lambda key: SUPP[key][0]['env_length']
 # number of sensors:
 NSENSORS=lambda key: SUPP[key][0]['Nsensors']
-NIMPS=lambda key: 4.*pow(NSENSORS(key),2)
 # duration of a run (assumed the same for all runs)
 DURATION=lambda key: len(DATA[key]['counter'][0])
+# diameter of environment
+DIAM=lambda key: SUPP[key][0]['diam']
 
 #
 #Initialize the plots
 #
 
-
-
 #- initialize figure
-fig,axes=plt.subplots(nrows=len(ENVS),ncols=len(TYPES),sharex=True,sharey=True)
+fig,axes=plt.subplots(nrows=len(ENVS),ncols=len(TYPES),sharex=True)
 #fig.suptitle('Error rates in learned PCRs over time',fontsize=10)
-plt.subplots_adjust(left=0.05,right=0.95,bottom=0.05,top=0.95)
+plt.subplots_adjust(left=0.04,right=0.99,bottom=0.07,top=0.97)
 
 #- form the implications plots
 for env,ax_row in zip(ENVS,axes):
-    for typ,ax in zip (TYPES.keys(),ax_row):
+    for typ,ax in zip (ORDERED_TYPES,ax_row):
+	burn=BURN[(env,typ,'dull')]
+	diam=int(DIAM((env,typ,'dull')))
         # prepare axis parameters
-        ax.set_ylabel('distance from target',fontsize=10)
-        ax.set_xlabel('time elapsed (cycles)',fontsize=10)
-        ax.set_ylim(bottom=0.)
-        
+        ax.set_title(env+', '+typ,fontsize=24)
+        ax.set_ylabel('distance from target',fontsize=24)
+        ax.set_xlabel('time elapsed (cycles)',fontsize=24)
+	ax.tick_params(labelsize=24)
+	ax.set_ylim(bottom=-1,top=diam+1)
+	ax.set_yticks(range(0,diam+1,diam/5))
+        #ax.set_ylim(bottom=0.)
         # iterate over variations
         for varn in VARIATIONS.keys():
             key=(env,typ,varn)
-            t=xrange(DURATION(key))
+            start=2*burn-DURATION(key)
+            finish=DURATION(key)
+            t=xrange(start,finish)
             data=np.array(DATA[key]['dist'])
-            mean_dist=np.mean(data)
-            sdiv_dist=np.std(data)
-            
-            ALPH=0.7 #foreground transparency coefficients
-            BETA=0.2 #background transparency coefficients
-        
+            #print data.shape
+            mean_dist=np.mean(data,axis=0)[start:]
+            sdiv_dist=np.std(data,axis=0)[start:]
+            #print mean_dist.shape
+            #print sdiv_dist.shape
+            #exit(0)
+
+            ALPHA=0.7 #foreground transparency coefficients
+            BETA=0.1 #background transparency coefficients
+
             ax.fill_between(t,mean_dist-sdiv_dist,mean_dist+sdiv_dist,alpha=BETA,color=VARIATIONS[varn])
-        
-            ax.plot(t,mean_dist,linestyle='solid',linewidth=3,color=VARIATIONS[varn],alpha=ALPH)
-        
-            #ax.legend()
+
+            ax.plot(t,mean_dist,linestyle='solid',linewidth=3,color=VARIATIONS[varn],alpha=ALPHA,label=varn+' peak value signal')
+
+ 	ax.plot([burn-1,burn-1],[-1,diam+1],'--b.',label='training period ends (t='+str(burn)+')')
+	if env==ENVS[0] and typ==ORDERED_TYPES[0]:
+	    ax.legend(fontsize=24)
 
 
 #Show the plots

@@ -115,6 +115,15 @@ class Arena_base():
         else:
             return not self._oob(pos)
 
+    def rndPos(self):
+        rndx=self._xbounds[0]+rnd(self._xbounds[1]-self._xbounds[0])
+        rndy=self._ybounds[0]+rnd(self._ybounds[1]-self._ybounds[0])
+        pt=icomplex(rndx,rndy)
+        if self._oob(pt):
+            return self.rndPos()
+        else:
+            return pt
+        
     def attrCalc(self,pos,attributeName):
         if attributeName.find('Gradient')>=0:
             return sum([self._objects[objtag]._rescaling[attributeName](pos-self._objects[objtag]._pos) for objtag in self._objects])
@@ -126,9 +135,8 @@ class Arena_base():
 
     def addRandomMouse(self,tag,viewsize=5,viewports={}):
         mouseAttr={'viewSize':viewsize}
-        mouseAttr['direction']=[North,West,South,East][rnd(4)]
-        mouse_start_pos = icomplex(rnd(self._xbounds[1]-self._xbounds[0]),rnd(self._ybounds[1]-self._ybounds[0]))
-        self.addMouse(tag,mouse_start_pos,mouseAttr,viewports)
+        mouseAttr['direction']=DIRS[rnd(4)]
+        self.addMouse(tag,self.rndPos(),mouseAttr,viewports)
 
     def addRandomMice(self,how_many,viewsize=5,viewports={}):
         # construct x random mice
@@ -140,11 +148,7 @@ class Arena_base():
         #self._objects.append(cheese(self,tag,pos,params,attributes))
 
     def addRandomCheese(self,ind,params):
-        self.addCheese(
-            'ch'+str(ind),
-            icomplex(rnd(self._xbounds[1]-self._xbounds[0]),rnd(self._ybounds[1]-self._ybounds[0])),
-            params
-            )
+        self.addCheese('ch'+str(ind),self.rndPos(),params)
     
     def addRandomCheeses(self,how_many,params):
         for ind in xrange(how_many):
@@ -153,18 +157,24 @@ class Arena_base():
     def getMaxElev(self):
         return np.amax(self._map)
 
-    def getMice(self,tag='all'):
+    def getObjs_ofType(self,typ,tag='all'):
         if tag=='all':
-            tmpMice={}
+            tmpObjs={}
             for objtag in self._objects.keys():
-                if self._objects[objtag]._type=='mouse':
-                    tmpMice[tag]=self._objects[objtag]
-            return tmpMice
-        elif self._objects[tag]._type=='mouse':
+                if self._objects[objtag]._type==typ:
+                    tmpObjs[tag]=self._objects[objtag]
+            return tmpObjs
+        elif self._objects[tag]._type==typ:
             return self._objects[tag]
         else:
             raise Exception('No objects with tag \''+str(tag)+'\' in arena.\n\n')
 
+    def getMice(self,tag='all'):
+        return self.getObjs_ofType('mouse',tag)
+
+    def getCheeses(self,tag='all'):
+        return self.getObjs_ofType('cheese',tag)
+        
     def update_objs(self,tup):
         for objtag in self._objects:
             self._objects[objtag].update(tup)
@@ -247,6 +257,14 @@ class obj(object):
     def update(self,command=(False,False,False,False,False)):
         return None
 
+    def teleport(self,posn=None):
+        if posn is None:
+            self._pos=self._ar.rndPos()
+        elif not self._ar.oob(posn):
+            self._pos=posn
+        else:
+            raise Exception('\nObject cannot be teleported out of bounds. ---ABORTING\n')
+            
     def remove(self):
         del self._ar._objects[self._tag] #note each object is uniquely represented on the list of objects of an arena.
 
@@ -320,16 +338,11 @@ class mouse(obj):
         self._attr['direction']=self._attr['direction']*(North if lt else 1)*(South if rt else 1)
         return True # turn move always succeeds
 
-    def teleport(self,posn,pose):
-        # set mouse position, if legal
-        if not self._ar._oob(posn):
-            self._pos=posn
-        else:
-            raise Exception('Invalid mouse teleport.\n')
-        
-        # set mouse pose, if legal
-        if pose in [North,South,East,West]:
+        # set mouse pose
+        if pose in DIRS:
             self._attr['direction']=pose
+        elif pose is None:
+            self._attr['direction']=DIRS[rnd(4)]
         else:
             raise Exception('Invalid mouse teleport.\n')
 
@@ -384,16 +397,16 @@ class mouse(obj):
     def calculate_cos_grad(self,attribute):
         # assuming x will the gradient of the elevation landscape, of type complex, the cosine of the angle between x and the relative pose:
         cos=lambda v: 0 if abs(v)==0 else (v*self._attr['direction'].conj().convert()).real/abs(v)
-        return cos(self.calculate_gradient(attribute))        
+        return cos(self.calculate_gradient(attribute))
 
     def angle(self,ind,dirn):
         # assuming dirn will be 'fd'/'bk'/'lt'/'rt' wrt the pose vector:
         relposec=(REL_DIRS[dirn]*self._attr['direction']).conj().convert()
-        # assuming x will the gradient of the elevation landscape, of type complex, the cosine of the angle between x and the relative pose:
+        # assuming ind will the gradient of the elevation landscape, of type complex, the cosine of the angle between x and the relative pose:
         cos=lambda v: 0 if abs(v)==0 else (v*relposec).real/abs(v)
         # rescaling function to be applied to the cosine of the angle between grad and dirn:
         rescaling=lambda x: pow(4.,1.+x)
-        return rescaling(cos(self.calculate_gradient('elevation')))>=ind
+        return rescaling(cos(self.calculate_gradient('elevation')))>ind
 
 #cheese class:
 class cheese(obj):
@@ -420,8 +433,6 @@ class cheese(obj):
         if self._attr['counter']>=self._params['nibbles']:
             self.remove()
 
-   
-    
         
                 
 def main():
