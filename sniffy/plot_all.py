@@ -174,7 +174,7 @@ DIAM=lambda key: SUPP[key][0]['diam']
 #- initialize figure
 fig,axes=plt.subplots(nrows=len(ENVS),ncols=len(TYPES),sharex=True)
 #fig.suptitle('Error rates in learned PCRs over time',fontsize=10)
-plt.subplots_adjust(left=0.04,right=0.99,bottom=0.07,top=0.97)
+plt.subplots_adjust(left=0.05,right=0.95,bottom=0.1,top=0.95)
 
 #- form the implications plots
 for env,ax_row in zip(ENVS,axes):
@@ -182,10 +182,10 @@ for env,ax_row in zip(ENVS,axes):
 	burn=BURN[(env,typ,'dull')]
 	diam=int(DIAM((env,typ,'dull')))
         # prepare axis parameters
-        ax.set_title(env+', '+typ,fontsize=24)
-        ax.set_ylabel('distance from target',fontsize=24)
-        ax.set_xlabel('time elapsed (cycles)',fontsize=24)
-	ax.tick_params(labelsize=24)
+        ax.set_title(env+', '+typ,fontsize=20)
+        ax.set_ylabel('distance from target',fontsize=20)
+        ax.set_xlabel('time elapsed (cycles)',fontsize=20)
+	ax.tick_params(labelsize=20)
 	ax.set_ylim(bottom=-1,top=diam+1)
 	ax.set_yticks(range(0,diam+1,diam/5))
         #ax.set_ylim(bottom=0.)
@@ -212,7 +212,7 @@ for env,ax_row in zip(ENVS,axes):
 
  	ax.plot([burn-1,burn-1],[-1,diam+1],'--b.',label='training period ends (t='+str(burn)+')')
 	if env==ENVS[0] and typ==ORDERED_TYPES[0]:
-	    ax.legend(fontsize=24)
+	    ax.legend(fontsize=16)
 
 
 #Show the plots

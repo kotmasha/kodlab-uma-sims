@@ -1,0 +1,7 @@
+python ../../../kodlab-uma-encapsulated/deployment/start_UMA.py
+python launcher.py interval_arb_long.yml
+python ../../../kodlab-uma-encapsulated/deployment/stop_UMA.py
+
+python ../../../kodlab-uma-encapsulated/deployment/start_UMA.py
+python launcher.py circle_arb_long.yml
+python ../../../kodlab-uma-encapsulated/deployment/stop_UMA.py
