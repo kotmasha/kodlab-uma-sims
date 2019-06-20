@@ -170,7 +170,7 @@ except:
 fig,ax=plt.subplots()
 fig.suptitle('Sniffy w/arbiter on a '+ENV_TYPE+' of diameter '+str(DIAM)+':\ndistance to the target as a function of time during and after training',fontsize=18)
 plt.subplots_adjust(left=0.1,right=0.98,bottom=0.13,top=0.92)
-ALPHA=0.2
+ALPHA=0.05
 THICK=3
 #ax.set_title(TYPE+', '+VARN,fontsize=36)
 ax.set_ylabel('distance from target',fontsize=18)

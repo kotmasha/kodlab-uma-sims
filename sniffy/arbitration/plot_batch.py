@@ -86,12 +86,18 @@ if bool(preamble['agent_dataQ']):
 #
 # Read the data from the .dat files (GENERIC)
 #
+counter=0
 SUPP={}
 for ind in xrange(NRUNS):
     input_file=open(input_file_name(ind),'rb')
     supp_file=open(supp_file_name(ind),'rb')
     #load data from the supplementary files:
-    SUPP[ind]=json.loads(supp_file.readline())
+    try:
+	SUPP[ind]=json.loads(supp_file.readline())
+	counter+=1
+    except:
+	print 'Run \#'+str(ind)+' failed.\n'
+	
 
     #load data from the data files:
     for record in get_pickles(input_file):
@@ -114,7 +120,7 @@ for ind in xrange(NRUNS):
     # close the data & supplementary files:
     input_file.close()
     supp_file.close()
-
+print 'Total number of runs completed: '+str(counter)+' out of '+str(NRUNS)+'.\n'
 
 #------------------------------------------------------------------------------------
 # At this point, each DATA[tag] item is a 2-dim Python list object,

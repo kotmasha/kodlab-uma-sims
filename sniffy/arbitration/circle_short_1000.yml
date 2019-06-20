@@ -4,6 +4,7 @@
 
 script: sniffy_AT_arb
 func: start_experiment
+first_run: 0
 Nruns: 1000
 
 params:

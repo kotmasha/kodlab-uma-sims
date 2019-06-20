@@ -4,19 +4,20 @@
 
 script: sniffy_AT_arb_mini
 func: start_experiment
-Nruns: 10000
+first_run: 0
+Nruns: 6800
 
 params:
   SnapType: qualitative
   PeakType: dull
-  env_type: circle
+  env_type: interval
   env_sens: 20
   beacon_width: 4
   total_cycles: 2000
   burn_in_cycles: 250
   ex_dataQ: False
   agent_dataQ: False
-  name: interval_short_1000
+  name: interval_short_10000
   mids_to_record:
     - pos
     - tpos

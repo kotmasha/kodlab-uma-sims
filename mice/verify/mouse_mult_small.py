@@ -438,7 +438,6 @@ def start_experiment(run_params):
             for mid in agent._SNAPSHOTS[token]._SENSORS:
                 delay_sigs.append(agent.generate_signal([mid],token))
             agent.delay(delay_sigs, token)
-            #print UMACD[(agent._ID,token)].getCurrent()
 
     # training period
     while EX.this_state(id_count)<TRAINING_CYCLES:
