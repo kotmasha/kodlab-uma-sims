@@ -76,20 +76,20 @@ MOUSE_PARAMS={
     'order': np.int32(preamble['order']),
     }
 
+# read the initial list of cheese positions
+CHEESE_LIST=[complex(p[0],p[1]) for p in SUPP['cheeseList']]
+
 # call the arena constructor
 arena = Arena_wmouse(
     xbounds=eval(preamble['xbounds']),
     ybounds=eval(preamble['ybounds']),
     cheese_params=CHEESE_PARAMS,
-    cheese_list=SUPP['cheeseList'],
+    cheese_list=CHEESE_LIST,
     mouse_params=MOUSE_PARAMS,
     visualQ=True,
     out_of_bounds=eval(preamble['out_of_bounds']),
     random_state=RS,
     )
-
-
-
 
 
 # prepare container for raw data
@@ -144,8 +144,8 @@ def animate(record):
 
 anim = animation.FuncAnimation(
     fig=arena._fig,
-    func=animate,
-    #init_func=animation_init,
+    func=arena_advance,
+    init_func=arena_init,
     frames=input,
     repeat=False,
     save_count=preamble['total_cycles'],

@@ -81,7 +81,7 @@ def start_experiment(run_params):
         recorder.addendum('seed',arena._rnd_init_state)
         recorder.addendum('maxCheeses',CHEESE_PARAMS['maxCheeses'])
         recorder.addendum('Ncheeses',CHEESE_PARAMS['Ncheeses'])
-        recorder.addendum('cheeseList',[arena.getObj(tag)._pos for tag in arena.getCheeseList()])
+        recorder.addendum('cheeseList',[(arena.getObj(tag)._pos.real,arena.getObj(tag)._pos.imag) for tag in arena.getCheeseList()])
         
     id_dec = 'decision'
     id_count = 'counter'

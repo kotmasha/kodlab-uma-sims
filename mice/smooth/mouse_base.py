@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as mtr
 import matplotlib as mpl
+import cPickle
 
 from numpy.random import RandomState as RS
 
@@ -103,15 +104,15 @@ class obj(object):
         self._repns={}
 
     # Generic update method
-    def update(self,command):
+    def update(self,control):
         # update the object state (position,attributes):
-        self.update_state(command)
+        self.update_state(control)
         # update the object's representations:
         for tag in self._repn_tags:
             self._repns[tag].update()
 
     # Generic state update method (do nothing)
-    def update_state(self,command):
+    def update_state(self,control):
         pass
 
     def getPos(self):
@@ -144,7 +145,7 @@ class obj(object):
     def teleport(self,posn=None):
         if posn is None: #teleport to a random position in the environment...
             self._pos=self._ar.rndPos()
-        elif not self._ar.oob(posn): #...unless a legitimate target position was specified
+        elif self._ar.inBounds(posn): #...unless a legitimate target position was specified
             self._pos=posn
         else:
             raise Exception('\nObject cannot be teleported out of bounds. ---ABORTING\n')
@@ -218,8 +219,7 @@ class Arena_base():
         
         #RandomState object for reproducibility purposes
         self._rnd=random_state
-        random_state.seed()
-        self._rnd_init_state=self._rnd.get_state()
+        self._rnd_init_state=cPickle.dumps(self._rnd.get_state())
 
         #Visualizations etc.
         self._repn_tags=[]
@@ -416,10 +416,16 @@ class Mouse(obj):
 
     ## Mouse motion
 
-    def update_state(self,command=(False,False,False,False,False)):
-        self.move(command)
+    def update_state(self,control):
+        mode,command=control
+        if mode=='move':
+            self.move(command)
+        elif mode=='teleport':
+            self.teleport(command)
+        else:
+            raise Exception('\nInvalid command issued to Mouse '+str(self._tag)+' --- Aborting.\n')
 
-    def move(self,command=(False,False,False,False,False)):
+    def move(self,command):
         # assume command is a Boolean tuple of the form:
         fd,bk,lt,rt,arb=command
         response_step=False
@@ -444,20 +450,20 @@ class Mouse(obj):
         self._attr['pose']=self._attr['pose']*(self._attr['turn'](1) if lt else 1)*(self._attr['turn'](-1) if rt else 1)
         return True # turn move always succeeds
 
-    def teleport(self,posn=None,pose=None):
-        if posn is None: #teleport to a random position in the environment...
-            self._pos=self._ar.rndPos()
-        elif not self._ar.oob(posn): #...unless a legitimate target position was specified
-            self._pos=posn
-            self._attr['pose']=pose
-        else:
-            raise Exception('\nMouse cannot be teleported out of bounds. ---ABORTING\n')
-        if pose is None:
+    def teleport(self,command=None):
+        if command is None: # teleport randomly
+            self._pos=self._ar.rndPos() # new position is drawn from arena
             self._attr['pose']=cmath.rect(1,2*np.pi*self._ar._rnd.rand()) #new pose vector is a random unit vector
-        elif isinstance(pose,complex) and pose!=complex(0,0):
-            self._attr['pose']=pose/abs(pose)
         else:
-            raise Exception('\nSpecified mouse pose must be a non-zero complex number. ---ABORTING\n')
+            posn,pose=command
+            if isinstance(posn,complex) and self._ar.inBounds(posn): 
+                self._pos=posn
+            else:
+                raise Exception('\nMouse cannot be teleported out of bounds. ---ABORTING\n')
+            if isinstance(pose,complex) and pose!=complex(0,0):
+                self._attr['pose']=pose/abs(pose)
+            else:
+                raise Exception('\nSpecified mouse pose must be a non-zero complex number. ---ABORTING\n')
 
     ## World frame to mouse frame and back:
 
@@ -523,6 +529,7 @@ class Arena_wmouse(Arena_base):
         ybounds,
         mouse_params={'horizon':5,'order':4},
         cheese_params={'maxCheeses':20,'Ncheeses':20,'nibbles':5},
+        cheese_list=[],
         visualQ=True,
         out_of_bounds=lambda x: False,
         random_state=RS(),
@@ -546,21 +553,16 @@ class Arena_wmouse(Arena_base):
         self.setMisc('horizon',mouse_params['horizon'])
 
         #add the requested number of random cheeses
-        if cheese_params['Ncheeses']<=cheese_params['maxCheeses']:
-            for ind in xrange(cheese_params['Ncheeses']):
-                self.addObj(Cheese(self,'ch'+str(ind+1),self.rndPos(),cheese_params['nibbles'],mouse_params['horizon']))
+        if cheese_params['Ncheeses']<=cheese_params['maxCheeses'] and len(cheese_list)<=cheese_params['maxCheeses']:
+            if cheese_list==[]:
+                for ind in xrange(cheese_params['Ncheeses']):
+                    self.addObj(Cheese(self,'ch'+str(ind+1),self.rndPos(),cheese_params['nibbles'],mouse_params['horizon']))
+            else:
+                for ind,pos in enumerate(cheese_list):
+                    self.addObj(Cheese(self,'ch'+str(ind+1),pos,cheese_params['nibbles'],mouse_params['horizon']))
         else:
             raise Exception('\nNumber of requested cheeses cannot exceed maximum. --- Aborting\n')
-        '''
-        #add a regular array of cheeses
-        N=3
-        for x in xrange(N+1):
-            for y in xrange(N+1):
-                xb0,xb1=np.float32(xbounds)
-                yb0,yb1=np.float32(ybounds)
-                regpos=lambda a,b: complex(xb0+a*(xb1-xb0)/N,yb0+b*(yb1-yb0)/N) 
-                self.addObj(Cheese(self,'ch'+str(x+(N+1)*y),regpos(x,y),cheese_params['nibbles'],mouse_params['horizon']))
-        '''
+
         #add global map representation:
         if visualQ:
             self.addRepn('global_view',Repn_global_arena_wmouse(self))
@@ -673,6 +675,7 @@ class Repn_global_arena_wmouse(Repn_base):
             self.setAttr('wipe_landscape',wipe_landscape)
             #  - update the landscape on GPU
             cheeses=[arena.getObj(tag)._pos for tag in arena.getCheeseList()]
+            cheeses.append(complex(0,0))
             self.setAttr('cheeses_real',gpuarray.to_gpu(np.array([pos.real for pos in cheeses],dtype=np.float32)))
             self.setAttr('cheeses_imag',gpuarray.to_gpu(np.array([pos.imag for pos in cheeses],dtype=np.float32)))
             cheese_contribution(
@@ -680,13 +683,14 @@ class Repn_global_arena_wmouse(Repn_base):
                 self.getAttr('in_bounds'),
                 self.getAttr('cheeses_real'),
                 self.getAttr('cheeses_imag'),
-                np.int32(len(cheeses)),
+                np.int32(len(cheeses)-1),
                 np.float32(arena.getMiscVal('horizon')),
                 self.xb0,self.xb1,self.dx,
                 self.yb0,self.yb1,self.dy,
                 block=(BLOCK_SIZE,BLOCK_SIZE,1),
                 grid=(self.xBlocks,self.yBlocks,1),
                 )
+
             #  - prepare axis for plotting
             #ax.set_xlim((xb0-1,xb1+1))
             #ax.set_ylim((yb0-1,yb1+1))
@@ -790,10 +794,10 @@ def main():
 
     plt.show()
     COMMANDS={
-        'w':(True,False,False,False,True),
-        's':(False,True,False,False,True),
-        'a':(False,False,True,False,False),
-        'd':(False,False,False,True,False),
+        'w':('move',(True,False,False,False,True)),
+        's':('move',(False,True,False,False,True)),
+        'a':('move',(False,False,True,False,False)),
+        'd':('move',(False,False,False,True,False)),
         }
     while True:
         userInput = raw_input("what would you like to do now? w,a,s,d or st to stop\n")
