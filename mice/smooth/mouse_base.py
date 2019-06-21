@@ -373,8 +373,8 @@ class Cheese(obj):
         xb0,xb1=arena._xbounds
         yb0,yb1=arena._ybounds
         diam=abs(complex(xb1-xb0,yb1-yb0))
-        self._attr['scent']=lambda posn: max(0,2*self._attr['horizon']-abs(posn-self._pos))
-        self._attr['scentGradient']=lambda posn: Origin if (posn==self._pos or abs(posn-self._pos)>2*self._attr['horizon']) else -(posn-self._pos)/abs(posn-self._pos)
+        self._attr['scent']=lambda posn: max(0,self._attr['horizon']-abs(posn-self._pos))
+        self._attr['scentGradient']=lambda posn: Origin if (posn==self._pos or abs(posn-self._pos)>self._attr['horizon']) else -(posn-self._pos)/abs(posn-self._pos)
         #self._attr['scent']=lambda posn: np.exp(-(abs(posn-self._pos)/5.)**2)
         #self._attr['scentGradient']=lambda posn: -(2./25.)*np.exp(-(abs(posn-self._pos)/5)**2)*(posn-self._pos)
 
