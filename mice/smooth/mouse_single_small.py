@@ -76,13 +76,6 @@ def start_experiment(run_params):
     #
 
     EX = Experiment(test_name, UMARestService(host, port))
-    if not __name__=='__main__':
-        recorder=experiment_output(EX,run_params)
-        recorder.addendum('seed',arena._rnd_init_state)
-        recorder.addendum('maxCheeses',CHEESE_PARAMS['maxCheeses'])
-        recorder.addendum('Ncheeses',CHEESE_PARAMS['Ncheeses'])
-        recorder.addendum('cheeseList',[(arena.getObj(tag)._pos.real,arena.getObj(tag)._pos.imag) for tag in arena.getCheeseList()])
-        
     id_dec = 'decision'
     id_count = 'counter'
     
@@ -395,6 +388,15 @@ def start_experiment(run_params):
 
     # an update state to fill the state deques
     EX.update_state([cid_rt, cid_lt, cid_fd, cid_bk])
+    if not __name__=='__main__':
+        recorder=experiment_output(EX,run_params)
+        recorder.addendum('seed',arena._rnd_init_state)
+        recorder.addendum('maxCheeses',CHEESE_PARAMS['maxCheeses'])
+        recorder.addendum('Ncheeses',CHEESE_PARAMS['Ncheeses'])
+        recorder.addendum('cheeseList',[(arena.getObj(tag)._pos.real,arena.getObj(tag)._pos.imag) for tag in arena.getCheeseList()])
+        recorder.addendum('pos_out',(arena.getObj('mus').getPos().real,arena.getObj('mus').getPos().imag))
+        recorder.addendum('pose_out',(arena.getObj('mus').getAttr('pose').real,arena.getObj('mus').getAttr('pose').imag))
+        recorder.addendum('counter',arena.getMiscVal('counter'))
 
     #client data objects for the experiment
     UMACD={}

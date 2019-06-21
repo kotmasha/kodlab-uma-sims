@@ -15,8 +15,8 @@ params:
   agent_dataQ: False
 
   visualQ: False
-  training_cycles: 10
-  run_cycles: 10
+  training_cycles: 100
+  run_cycles: 100
 
   xbounds: "(0.,10.)"
 

@@ -22,7 +22,7 @@ def get_pickles(infile):
     #except EOFError:
     #    pass
 
-def icx_pair(ls):
+def cx(ls):
     return complex(ls[0],ls[1])
 
 NAME=sys.argv[1]
@@ -38,7 +38,7 @@ preamblef.close()
 # select input file according to provided run number
 RUN_NAME=lambda i: NAME+"_"+str(i)
 input_file_name=lambda i: os.path.join(DIRECTORY,RUN_NAME(i)+".dat")
-supp_file_name=lambda i: os.path.join(DIRECTORY,RUN_NAME(u)+".sup")
+supp_file_name=lambda i: os.path.join(DIRECTORY,RUN_NAME(i)+".sup")
 input_file=open(input_file_name(NUM),'rb')
 supp_file=open(supp_file_name(NUM),'rb')
 
@@ -61,7 +61,7 @@ SUPP=next(get_pickles(supp_file))
 
 # form a random number generator using recorded initial state
 RS=np.random.RandomState()
-RS.set_state(unpickle(SUPP['seed']))
+RS.set_state(unpickle(str(SUPP['seed'])))
 
 # read the cheese parameters
 CHEESE_PARAMS={
@@ -76,6 +76,10 @@ MOUSE_PARAMS={
     'order': np.int32(preamble['order']),
     }
 
+MOUSE_INIT={
+    'pos':cx(SUPP['pos_out']),
+    'pose':cx(SUPP['pose_out']),
+    }
 # read the initial list of cheese positions
 CHEESE_LIST=[complex(p[0],p[1]) for p in SUPP['cheeseList']]
 
@@ -86,71 +90,34 @@ arena = Arena_wmouse(
     cheese_params=CHEESE_PARAMS,
     cheese_list=CHEESE_LIST,
     mouse_params=MOUSE_PARAMS,
+    mouse_init=MOUSE_INIT,
     visualQ=True,
     out_of_bounds=eval(preamble['out_of_bounds']),
     random_state=RS,
     )
 
-
-# prepare container for raw data
-DATA={}
-# decode first frame to initialize the arena 
-decode_mids(next(input),DATA)
-# place cheeses in arena
-for objtag in DATA['che_out']:
-    arena.addCheese(
-        str(objtag),
-        icx_pair(DATA['che_out'][str(objtag)]),
-        cheeseParams,
-        )
-# place mouse in arena
-arena.addMouse(
-    'mus',
-    icx_pair(DATA['pos_out']),
-    {'viewSize':preamble['viewportSize'],'direction' : icx_pair(DATA['pose_out'])},
-    )
 # update data to be displayed in the movie:
-arena.putMisc(str(DATA['counter']))
-arena.generateHeatmap('elevation')
-#arena.getMice('mus').generateHeatmap('elevation')
+arena.setMisc('counter',SUPP['counter'],lambda ar: ar.getMiscVal('counter')+1)
 
 # function replaying the recorded activity of the mouse in the arena
-def animate(record):
+def arena_advance(record):
+    # prepare container for raw data
+    DATA={}
     # obtain next record
     decode_mids(record,DATA)
     # update the arena according to new input
-    arena.putMisc(str(DATA['counter']))
-    flag=False
-    for objtag in arena._objects.keys():
-        obj=arena._objects[objtag]
-        if obj._type=='mouse':
-            # teleport the mouse to its new position
-            obj.teleport(icx_pair(DATA['pos_out']),icx_pair(DATA['pose_out']))
-        elif obj._type=='cheese':
-            # remove the cheese if it is gone
-            if not objtag in DATA['che_out']:
-                obj.remove()
-                flag=True
-            else:
-                pass
-        else:
-            pass
-    # update the plot
-    if flag:
-        arena.updateHeatmapFull('elevation')
-    else:
-        arena.updateHeatmap('elevation')
-    #arena.getMice('mus').updateHeatmapFull('elevation')
+    # - we are assuming the mouse movement generates all changes
+    arena.update(('teleport',(cx(DATA['pos_out']),cx(DATA['pose_out']))))
 
 anim = animation.FuncAnimation(
-    fig=arena._fig,
+    fig=arena.getRepn('global_view').getContent('global_fig'),
     func=arena_advance,
-    init_func=arena_init,
+    #init_func=arena_init,
     frames=input,
     repeat=False,
-    save_count=preamble['total_cycles'],
+    save_count=preamble['training_cycles']+preamble['run_cycles']+1,
     interval=50,
     )
 
-plt.show()
-#anim.save(os.path.join(DIRECTORY,RUN_NAME(NUM)+'.mp4'),dpi=100)#,writer='imagemagick')
+#plt.show()
+anim.save(os.path.join(DIRECTORY,RUN_NAME(NUM)+'.mp4'),dpi=300)#,writer='imagemagick')

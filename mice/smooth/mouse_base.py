@@ -354,6 +354,9 @@ class Arena_base():
         del self._repns[tag]
         self._repn_tags.remove(tag)
 
+    def getRepn(self,tag):
+        return self._repns[tag]
+
 
 #
 ### MICE AND CHEESES
@@ -396,19 +399,22 @@ class Repn_cheese(Repn_base):
 
 #mouse class:
 class Mouse(obj):
-    def __init__(self,arena,tag,pos,horizon,order):
+    def __init__(self,arena,tag,horizon,order,pos,pose=complex(0,0)):
         obj.__init__(self,arena,'mouse',tag,pos)
         ## Initialization attributes:
         #  - 'order':   an integer N representing the order of the mouse's turning action
         #  - 'horizon': view distance for the mouse
         self._attr['horizon']=float(horizon)
-        self._attr['order']=order
+        self._attr['order']=int(order)
 
         ## Mouse attributes:
         #  - [left] turn multiplier:
         self._attr['turn']=lambda k: cmath.rect(1,2*k*np.pi/order)
-        #  - starting pose vector is a random unit vector:
-        self._attr['pose']=cmath.rect(1,2*np.pi*self._ar._rnd.randint(order)/order)
+        #  - starting pose vector:
+        if pose==complex(0,0):
+            self._attr['pose']=cmath.rect(1,2*np.pi*self._ar._rnd.randint(order)/order)
+        else:
+            self._attr['pose']=pose/abs(pose)
         #  - function computing scent at a position (mouse frame)
         self._attr['scent']=lambda relpos: sum([self._ar.getAttr(tag,'scent')(self.worldPos(relpos)) for tag in self._ar._types_to_tags['cheese']])
         #  - function computing scent gradient at a position (mouse frame)
@@ -528,6 +534,7 @@ class Arena_wmouse(Arena_base):
         xbounds,
         ybounds,
         mouse_params={'horizon':5,'order':4},
+        mouse_init={},
         cheese_params={'maxCheeses':20,'Ncheeses':20,'nibbles':5},
         cheese_list=[],
         visualQ=True,
@@ -542,9 +549,24 @@ class Arena_wmouse(Arena_base):
         self.addType('cheese')
         self.addType('mouse')
 
-        #add the mouse at a random position
-        self.addObj(Mouse(self,'mus',self.rndPos(),mouse_params['horizon'],mouse_params['order']))
-        
+        #add the mouse...
+        if mouse_init=={}: #... at a random position with random pose
+            self.addObj(Mouse(
+                self,
+                tag='mus',
+                pos=self.rndPos(),
+                horizon=mouse_params['horizon'],
+                order=mouse_params['order']
+                ))
+        else: #... at a prescribed position & pose
+            self.addObj(Mouse(
+                self,
+                tag='mus',
+                pos=mouse_init['pos'],
+                pose=mouse_init['pose'],
+                horizon=mouse_params['horizon'],
+                order=mouse_params['order']
+                ))
         #add states
         self.setMisc('counter',0,lambda ar: ar.getMiscVal('counter')+1) # time counter
         self.setMisc('maxCheeses',cheese_params['maxCheeses']) # maximum number of cheeses
