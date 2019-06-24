@@ -143,13 +143,14 @@ def start_experiment(run_params):
     def xsensor(state,m,w):  # along x-axis
         return dist(state[id_pos][0],m)<=w
 
+    id_x={}
+    cid_x={}
     for pos in xrange(X_BOUND):
-        tmp_name = 'x' + str(pos)
-        id_tmp, id_tmpc = EX.register_sensor(tmp_name)
+        id_x[pos], cid_x[pos] = EX.register_sensor('x' + str(pos))
         INIT = (dist(START,TARGET) <= BEACON_WIDTH)
-        EX.construct_sensor(id_tmp, partial(xsensor,m=pos,w=BEACON_WIDTH),[INIT,INIT])
-        RT.add_sensor(id_tmp)
-        LT.add_sensor(id_tmp)
+        EX.construct_sensor(id_x[pos], partial(xsensor,m=pos,w=BEACON_WIDTH),[INIT,INIT])
+        RT.add_sensor(id_x[pos])
+        LT.add_sensor(id_x[pos])
 
     # distance to target
     # - $id_dist$ has already been registered
@@ -211,9 +212,6 @@ def start_experiment(run_params):
     for agent_name in EX._AGENTS:
         EX._AGENTS[agent_name].init()
 
-    # ONE UPDATE CYCLE (without action) TO "FILL" THE STATE DEQUES
-    EX.update_state([cid_rt, cid_lt])
-
     #client data objects for the experiment
     #UMACD={}
     #for agent_id in EX._AGENTS:
@@ -225,9 +223,9 @@ def start_experiment(run_params):
         for token in ['plus', 'minus']:
             delay_sigs = []
             #delay the beacon sensors:
-            delay_sigs.extend([agent.generate_signal(['x'+str(ind)],token) for ind in xrange(X_BOUND)])
+            delay_sigs.extend([agent.generate_signal([key],token) for key in id_x.keys()])
             #delay the value sensors:
-            delay_sigs.extend([agent.generate_signal([id_val[val]],token) for val in xrange(X_BOUND/2)])
+            delay_sigs.extend([agent.generate_signal([key],token) for key in id_val.keys()])
             #construct the delayed sensor in each snapshot:
             agent.delay(delay_sigs, token)
 
@@ -256,28 +254,3 @@ def start_experiment(run_params):
     recorder.close()
     EX.remove_experiment()
 
-    #print "%s is done!\n" % test_name
-
-
-if __name__ == "__main__":
-    RUN_PARAMS={
-        'env_length':int(sys.argv[1]),
-        'total_cycles':int(sys.argv[3]),
-        'burn_in_cycles':int(sys.argv[2]),
-        'name':sys.argv[4],
-        'ex_dataQ':False,
-        'agent_dataQ':False,
-        'mids_to_record':['count','dist','sig'],
-        'Nruns':1,
-        'beacon_width':3,
-        }
-    
-    DIRECTORY=".\\"+RUN_PARAMS['name']
-    TEST_NAME=RUN_PARAMS['name']+'_0'
-    
-    os.mkdir(DIRECTORY)
-    preamblef=open(DIRECTORY+"\\"+RUN_PARAMS['name']+'.pre','wb')
-    cPickle.dump(RUN_PARAMS,preamblef)
-    preamblef.close()
-        
-    start_experiment(RUN_PARAMS,TEST_NAME)
