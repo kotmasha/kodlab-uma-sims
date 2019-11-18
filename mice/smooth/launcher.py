@@ -8,7 +8,7 @@ from cluster.cluster import *
 
 def check_fields(data):
     fmt = "{} field is missing from yaml file!"
-    for s in ['script', 'func', 'Nruns', 'params']:
+    for s in ['script', 'func', 'Nruns', 'first_run', 'params']:
         if s not in data:
             raise Exception(fmt.format(s))
 
@@ -26,7 +26,9 @@ if __name__ == "__main__":
     func = getattr(script, data['func'])
 
     Nruns = int(data['Nruns'])
+    first_run=int(data['first_run'])
     data['params']['Nruns']=data['Nruns']
+    data['params']['first_run']=data['first_run']
     params = data['params']
     #print params
     test_name = data['params']['name']
@@ -55,6 +57,14 @@ if __name__ == "__main__":
     # run the specified script with given .yml input
     cluster = ClusterManager()
     pool = PoolManager()
-    pool.start(func, test_yml_abs_path, Nruns, cluster.get_Ninstances(), cluster.get_port(), cluster.get_host())
+    pool.start(
+        func,
+        test_yml_abs_path,
+        Nruns,
+        first_run,
+        cluster.get_Ninstances(),
+        cluster.get_port(),
+        cluster.get_host()
+    )
 
     print "All runs are done.\n"

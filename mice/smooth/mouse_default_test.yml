@@ -1,55 +1,44 @@
 # The yml file for sniffy, name, script and func are required
-
-
-
 script: mouse_single_small
 func: start_experiment
+first_run: 0
+Nruns: 20
 
-Nruns: 1
 params:
-
   name: mouse_default_test
-
   ex_dataQ: False
-
   agent_dataQ: False
-
   visualQ: False
-  training_cycles: 100
-  run_cycles: 100
-
+  training_cycles: 1000
+  run_cycles: 3000
   xbounds: "(0.,10.)"
-
   ybounds: "(0.,10.)"
-
   out_of_bounds: "lambda x: False"
-
   order: 10
   cheesesPerView: 1.
-
-  nibbles: 2000
-
-  horizon: 5
-
+  nibbles: 10000
+  horizon: 10
   step_prob: 0.5
-
   mids_to_record:
-
     - "counter"
-
     - "fd"
     - "bk"
     - "rt"
     - "lt"
     - "arb_top"
     - "pos_out"
-
     - "pose_out"
-
     - "che_out"
-
     - "sig_step"
-
     - "sig_turn"
-
     - "mdist"
+    - "imps_fd+"
+    - "imps_fd-"
+    - "imps_bk+"
+    - "imps_bk-"
+    - "imps_rt+"
+    - "imps_rt-"
+    - "imps_lt+"
+    - "imps_lt-"
+    
+    

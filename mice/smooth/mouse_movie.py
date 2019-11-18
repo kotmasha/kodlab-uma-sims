@@ -116,8 +116,11 @@ anim = animation.FuncAnimation(
     frames=input,
     repeat=False,
     save_count=preamble['training_cycles']+preamble['run_cycles']+1,
-    interval=50,
+    interval=10,
     )
 
-#plt.show()
-anim.save(os.path.join(DIRECTORY,RUN_NAME(NUM)+'.mp4'),dpi=300)#,writer='imagemagick')
+while True:
+    userInput=raw_input('Type anything to exit:\n')
+    if userInput:
+	exit(0)
+#anim.save(os.path.join(DIRECTORY,RUN_NAME(NUM)+'.mp4'),dpi=100)#,writer='imagemagick')

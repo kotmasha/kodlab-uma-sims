@@ -2,14 +2,95 @@ import numpy as np
 from numpy.random import randint as rnd
 from numpy.random import seed
 from collections import deque
+from functools import partial
 #import curses
 import time
+from numpy.random import RandomState as RS
 from UMA.som2_noEP import *
 import sys
 import os
 from client.UMARest import *
 from mouse_base import *
 from copy import copy
+
+############### AUXILIARY FUNCTIONS
+def compi(x):
+    if type(x)==type(0):
+        return x+1 if x%2==0 else x-1
+    else:
+        raise Exception('Input to \"compi\" must be an integer! \n')
+
+def fcomp(x):
+    #assuming x is a footprint and an np.array:
+    return 1-x
+
+# inequality check for qualitative weights: "IS x strictly less than y?"
+def qless(x,y):
+    if x<0: #infinity is never less than anything
+        return False
+    elif y<0: #anything finite is less than infinity
+        return True
+    else: #finite things compared as usual
+        return x<y
+
+# max function for qualitative weights
+def qmax(*args):
+    if min(args)<0:
+        return -1
+    else:
+        return max(args)
+
+def qmin(*args):
+    if max(args)<0:
+        return -1
+    else:
+        return min(filter(lambda x: x>=0, args))
+
+# convert npdirs data into a matrix
+def convert_full_implications(matr):
+    L=len(matr)
+    for i in range(L):
+        for j in range(L):
+            if j >= len(matr[i]):
+                matr[i].append(matr[compi(j)][compi(i)])
+    return np.matrix(matr,dtype=int)
+
+# convert dirs data into a matrix
+def convert_raw_implications(matr):
+    L=len(matr)
+    new_matr=np.zeros((L,L),dtype=int)
+    for i in range(L):
+        for j in range(L):
+            if j >= len(matr[i]):
+                try:
+                    new_matr[i][j]+=matr[compi(j)][compi(i)]
+                    #matr[i].append(matr[compi(j)][compi(i)])
+                except IndexError:
+                    pass
+            else:
+                new_matr[i][j]+=matr[i][j]
+                    #matr[i].append(False)
+    return new_matr
+
+# convert weights data into a matrix
+def convert_weights(matr):
+    L=len(matr)
+    newmatr=[[] for ind in xrange(L)]
+    for i in xrange(L):
+        for j in xrange(L):
+            if j>=len(matr[i]):
+                newmatr[i].append(matr[j][i])
+            else:
+                newmatr[i].append(matr[i][j])
+    return newmatr
+
+def ldiff(x,y): # pointwise difference between lists
+    return map(abs,map(sub,x,y))
+
+def flatten(ls): # concatenation of elements in a list of lists
+    return reduce(concat, ls)
+
+#######################################
 
 def printArena(arena):
     for obj in arena._objects:
@@ -28,7 +109,7 @@ def start_experiment(run_params):
 
     cheesesPerView=float(run_params['cheesesPerView'])
     # initial number of cheeses is set to satisfy, on average, the cheesesPerView constraint
-    cheeseNum=int(np.floor(cheesesPerView*((XBOUNDS[1]-XBOUNDS[0])*(YBOUNDS[1]-YBOUNDS[0]))/(np.pi*pow(HORIZON,2))))
+    cheeseNum=max(1,int(np.floor(cheesesPerView*((XBOUNDS[1]-XBOUNDS[0])*(YBOUNDS[1]-YBOUNDS[0]))/(np.pi*pow(HORIZON,2)))))
     CHEESE_PARAMS={
         'nibbles':int(run_params['nibbles']),
         'maxCheeses':cheeseNum,
@@ -46,9 +127,10 @@ def start_experiment(run_params):
     host = run_params['host']
     port = run_params['port']
 
-    ### construct arenas
+    ### construct arena
     #
-
+    RND=RS()
+    RND.seed()
     arena = Arena_wmouse(
         xbounds=XBOUNDS,
         ybounds=YBOUNDS,
@@ -56,6 +138,7 @@ def start_experiment(run_params):
         cheese_params=CHEESE_PARAMS,
         visualQ=run_params['visualQ'],
         out_of_bounds=OOB,
+        random_state=RND,
         )
     
     ### Mouse/Agents parameters
@@ -264,9 +347,7 @@ def start_experiment(run_params):
     LT = EX.construct_agent(id_lt, id_sig_turn, final_action_LT, AGENT_PARAMS)
     RT = EX.construct_agent(id_rt, id_sig_turn, final_action_RT, AGENT_PARAMS)
 
-    #pos before direction so pos uses state[direction][0] which is the direction of the last state
-    #id_pos and id_direction are all that is used to recreate the mouse because there is only one mouse
-    
+
     #--------Constructing the experiment-------------
     ###ARENA UPDATE
     id_arena=EX.register('arena')
@@ -328,7 +409,7 @@ def start_experiment(run_params):
     ### MOTIVATIONAL SIGNALS
     #
 
-    #ell_one distance to nearest cheese
+    #ell_two distance to nearest cheese
     id_mdist=EX.register('mdist')
     def getMinCheeseDist(state):
         return state[id_mouse][0].mdist()
@@ -336,12 +417,22 @@ def start_experiment(run_params):
     EX.construct_measurable(id_mdist,getMinCheeseDist,[INIT,INIT],depth=1)
 
     # stepping motivational signal (already registered) QUALITATIVE AGENT!!!
-    def step_signal(state):
-        return 2+np.sign(state[id_mdist][0]-state[id_mdist][1]) if state[id_mdist][0]<0.5 else 0
+    def step_motivation(state):
+        val_curr=state[id_mdist][0]
+        val_prec=state[id_mdist][1]
+        if val_curr<0.5:
+            return 0
+        elif val_curr-val_prec>0.5:
+            return 1
+        elif val_curr-val_prec<-0.5:
+            return 3
+        else:
+            return 2
+        #return 2-np.sign(state[id_mdist][0]-state[id_mdist][1]) if state[id_mdist][0]>=0.5 else 0
     INIT=2
-    EX.construct_measurable(id_sig_step,step_signal,[INIT,INIT])
+    EX.construct_measurable(id_sig_step,step_motivation,[INIT,INIT])
 
-    # turning motivational signal for QUALITATIVE AGENT!!!   
+    # turning motivational signal (already registered) QUALITATIVE AGENT!!!   
     rescaling_turn = lambda x: 0 if pow(4,1+x)>15 else 1
     def turn_motivation(state):
         return rescaling_turn(state[id_mouse][0].cos_grad(0))
@@ -374,7 +465,7 @@ def start_experiment(run_params):
         return lambda state: pow(4.,1+state[id_mouse][0].cos_grad(k))>ind
 
     for k in xrange(ROTATION_ORDER):
-        for ind in {4,10,15}:
+        for ind in {4}:
             id_angle[k,ind],cid_angle[k,ind]=EX.register_sensor('a_'+str(k)+'_'+str(ind))
             INIT= pow(4.,1.+arena.getObj('mus').cos_grad(k))>ind
             EX.construct_sensor(id_angle[k,ind],angles_upd(k,ind),[INIT,INIT])
@@ -383,6 +474,45 @@ def start_experiment(run_params):
      
     
     #---------------------------- INIT ------------------------------------------
+    #
+    ###Access to agents' internal state
+    #
+
+
+    # get internal data for each agent
+    ACCESS={}
+    for agent_id in EX._AGENTS.keys():
+        for token in ['plus','minus']:
+            ACCESS[(agent_id,token)]=UMAClientData(EX._EXPERIMENT_ID,agent_id,token,EX._service)
+
+    id_acc={}
+    def get_internal(state,snap_key):
+        return ACCESS[snap_key].get_all()
+    
+    INIT={}
+    INITSIZE={}
+    for key in ACCESS.keys():
+        aid,tok=key
+        id_acc[key]=EX.register('acc_'+aid+('+' if tok=='plus' else '-'))
+        EX.construct_measurable(id_acc[key],partial(get_internal,snap_key=key),[INIT],depth=0)
+        INIT[key]=ACCESS[key].get_all()
+        INITSIZE[key]=2*EX._AGENTS[aid]._SNAPSHOTS[tok]._SIZE #all sensors will be delayed
+
+    # get implication matrix from each agent
+    id_imps={}   
+    def get_imps(state,snap_key):
+        return convert_full_implications(
+            state[id_acc[snap_key]][0]['npdirs']
+        ).tolist()
+    for key in ACCESS.keys():
+        aid,tok=key
+        id_imps[key]=EX.register('imps_'+aid+('+' if tok=='plus' else '-'))
+        EX.construct_measurable(id_imps[key],partial(get_imps,snap_key=key),[np.identity(INITSIZE[key])],depth=0)
+
+    #
+    ### Initialize agents
+    # 
+    
     for agent_name in EX._AGENTS:
         EX._AGENTS[agent_name].init()
 
@@ -398,24 +528,8 @@ def start_experiment(run_params):
         recorder.addendum('pose_out',(arena.getObj('mus').getAttr('pose').real,arena.getObj('mus').getAttr('pose').imag))
         recorder.addendum('counter',arena.getMiscVal('counter'))
 
-    #client data objects for the experiment
-    UMACD={}
-    for agent_id in EX._AGENTS:
-        for token in ['plus','minus']:
-            UMACD[(agent_id,token)]=UMAClientData(EX._EXPERIMENT_ID,agent_id,token,EX._service)
-
-    # ASSIGN TARGET IF NOT AUTOMATED:
-    if AGENT_PARAMS['AutoTarg']:
-        pass
-    else:
-        # SET ARTIFICIAL TARGET ONCE AND FOR ALL
-        for agent_id in EX._AGENTS:
-            for token in ['plus','minus']:
-                tmp_target=agent.generate_signal([id_nav],token).value().tolist()
-                UMACD[(agent._ID,token)].setTarget(tmp_target)
-                
     # introducing a delayed sensor for every initial sensor, into each snapshot:
-    for agent in [RT,LT,FD]:
+    for agent in EX._AGENTS.values():
         for token in ['plus','minus']:
             delay_sigs = []
             for mid in agent._SNAPSHOTS[token]._SENSORS:
@@ -451,17 +565,17 @@ def main():
     plt.ion()
     RUN_PARAMETERS={
 	'test_name': "default_test",
-        'xbounds': "(0.,15.)",
-        'ybounds': "(0.,15.)",
+        'xbounds': "(0.,10.)",
+        'ybounds': "(0.,10.)",
         'out_of_bounds': "lambda x:False",
         'order': "20",
-        'horizon': "5",
+        'horizon': "10",
         'step_prob': "0.5",
         'cheesesPerView': "1",
         'nibbles': "50",
         'visualQ': "True",
-        'training_cycles': "10",
-        'run_cycles': "10", 
+        'training_cycles': "200",
+        'run_cycles': "200", 
         'mids_to_record': "[]",
         'ex_dataQ': "False",
         'agent_dataQ': "False",
@@ -469,7 +583,10 @@ def main():
         'port': "8000",
         }
     start_experiment(RUN_PARAMETERS)
-
+    while True:
+        if raw_input("Type anything to exit: "):
+            exit(0)
+    
 if __name__=='__main__':
     main()
     exit(0)
