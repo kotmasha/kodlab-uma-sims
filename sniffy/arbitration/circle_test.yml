@@ -1,0 +1,28 @@
+# Sniffy .yml file
+#
+# The "name", "script" and "func" fields are mandatory.
+
+script: arb_mini
+func: start_experiment
+first_run: 0
+Nruns: 20
+
+params:
+  SnapType: qualitative
+  PeakType: dull
+  env_type: circle
+  env_sens: 20
+  beacon_width: 4
+  total_cycles: 2000
+  burn_in_cycles: 1000
+  ex_dataQ: False
+  agent_dataQ: False
+  name: circle_test
+  mids_to_record:
+    - pos
+    - tpos
+    - counter
+    - dist
+    - sig
+    - imps+
+    - imps-
