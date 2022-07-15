@@ -8,7 +8,6 @@ from pycuda.compiler import SourceModule
 BLOCK_SIZE=16
 
 #std python
-import sys
 import cmath
 import numpy as np
 import matplotlib
@@ -16,13 +15,11 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as mtr
-import matplotlib as mpl
-import cPickle
+#import matplotlib as mpl
+import pickle
 
 from numpy.random import RandomState as RS
 
-from copy import deepcopy as cp
-from collections import deque
 
 ## A more standard rounding operation
 def my_round(x):
@@ -219,7 +216,7 @@ class Arena_base():
         
         #RandomState object for reproducibility purposes
         self._rnd=random_state
-        self._rnd_init_state=cPickle.dumps(self._rnd.get_state())
+        self._rnd_init_state=pickle.dumps(self._rnd.get_state())
 
         #Visualizations etc.
         self._repn_tags=[]
@@ -372,7 +369,7 @@ class Cheese(obj):
         #diameter of arena
         xb0,xb1=arena._xbounds
         yb0,yb1=arena._ybounds
-        diam=abs(complex(xb1-xb0,yb1-yb0))
+        #diam=abs(complex(xb1-xb0,yb1-yb0))
         self._attr['scent']=lambda posn: max(0,self._attr['horizon']-abs(posn-self._pos))
         self._attr['scentGradient']=lambda posn: Origin if (posn==self._pos or abs(posn-self._pos)>self._attr['horizon']) else -(posn-self._pos)/abs(posn-self._pos)
         #self._attr['scent']=lambda posn: np.exp(-(abs(posn-self._pos)/5.)**2)
@@ -440,7 +437,7 @@ class Mouse(obj):
             response_step=self.step(fd,bk)
         else:
             response_turn=self.turn(lt,rt)
-        #return response_step and response_turn # report whether or not the move suceeded
+        return response_step and response_turn # report whether or not the move suceeded
 
     def step(self,fwd,bck):
         # assume fwd and bck are boolean
@@ -577,7 +574,7 @@ class Arena_wmouse(Arena_base):
         #add the requested number of random cheeses
         if cheese_params['Ncheeses']<=cheese_params['maxCheeses'] and len(cheese_list)<=cheese_params['maxCheeses']:
             if cheese_list==[]:
-                for ind in xrange(cheese_params['Ncheeses']):
+                for ind in range(cheese_params['Ncheeses']):
                     self.addObj(Cheese(self,'ch'+str(ind+1),self.rndPos(),cheese_params['nibbles'],mouse_params['horizon']))
             else:
                 for ind,pos in enumerate(cheese_list):
@@ -623,10 +620,10 @@ class Repn_global_arena_wmouse(Repn_base):
             self.ypix=1+self.res*np.abs(self.yb1-self.yb0) # number of pixels in the y direction
             self.dx=np.float32(1./self.res) # x-spacing between contiguous pixel centers
             self.dy=np.float32(1./self.res) # y-spacing between contiguous pixel centers
-            self.xBlocks=1+np.floor_divide(self.xpix-1,BLOCK_SIZE) # number of blocks required in the x direction
-            self.yBlocks=1+np.floor_divide(self.ypix-1,BLOCK_SIZE) # number of blocks required in the y direction
-            self.xsize=self.xBlocks*BLOCK_SIZE # padded number of pixels in x direction
-            self.ysize=self.yBlocks*BLOCK_SIZE # padded number of pixels in y direction
+            self.xBlocks=int(1+np.floor_divide(self.xpix-1,BLOCK_SIZE)) # number of blocks required in the x direction
+            self.yBlocks=int(1+np.floor_divide(self.ypix-1,BLOCK_SIZE)) # number of blocks required in the y direction
+            self.xsize=np.uint32(self.xBlocks*BLOCK_SIZE) # padded number of pixels in x direction
+            self.ysize=np.uint32(self.yBlocks*BLOCK_SIZE) # padded number of pixels in y direction
             #  - prepare arrays and functionality on GPU
             self.setAttr(
                 'in_bounds',
@@ -634,7 +631,7 @@ class Repn_global_arena_wmouse(Repn_base):
                     np.array(
                         [[arena.inBounds(
                             self.xb0+i*self.dx+(self.yb0+j*self.dy)*1j
-                            ) for i in xrange(self.xsize)] for j in xrange(self.ysize)],
+                            ) for i in range(self.xsize)] for j in range(self.ysize)],
                         dtype=np.float32
                         )
                     )
@@ -688,7 +685,7 @@ class Repn_global_arena_wmouse(Repn_base):
             }
 
             '''
-            #  - initialize the CUDA module
+            #  - initialize the CUDA module for use in Python
             global_map_module=SourceModule(module_definition)
             cheese_contribution=global_map_module.get_function('landscape_update_by_cheese')
             wipe_landscape=global_map_module.get_function('wipe')
@@ -822,7 +819,7 @@ def main():
         'd':('move',(False,False,False,True,False)),
         }
     while True:
-        userInput = raw_input("what would you like to do now? w,a,s,d or st to stop\n")
+        userInput = input("what would you like to do now? w,a,s,d or st to stop\n")
         if userInput=='st':
             exit(0)
         elif userInput in COMMANDS.keys():
